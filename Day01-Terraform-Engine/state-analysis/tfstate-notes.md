@@ -1,195 +1,228 @@
-**Day 1 – Terraform Engine & State Learning Notes**
+# Terraform Day 1 – Terraform Engine Fundamentals
 
-Objective :
-Understand how the Terraform engine works internally, including the lifecycle commands, provider installation, and the Terraform state file.
+This project demonstrates the basic working of Terraform including provider installation, Terraform lifecycle commands, and understanding the Terraform state file.
 
-1. **Terraform Lifecycle**
-Terraform follows a standard workflow:
-terraform init
-terraform plan
-terraform apply
-terraform destroy
-terraform init
+The goal of this exercise is to understand how Terraform interacts with cloud infrastructure and how it maintains infrastructure state.
 
-**Purpose**:
--> Initializes the working directory
--> Downloads required providers
--> Creates .terraform directory
--> Generates .terraform.lock.hcl
+---
 
-**Observed behavior:**
--> AWS provider downloaded from registry
--> provider stored inside .terraform/providers
+## Tool Used
 
-**terraform plan**
-Purpose:
-Compares Terraform configuration vs current state
-Shows infrastructure changes before applying
+Terraform is used as the Infrastructure as Code tool for this project.
 
-Observation:
-Since the state file did not exist initially, Terraform planned to create the EC2 instance.
+Terraform allows engineers to define and provision infrastructure using configuration files instead of manual cloud console operations.
 
-Example output observed:
+---
+
+## Project Structure
+
+Day01-Terraform-Engine
+│
+├── provider.tf
+├── main.tf
+├── variables.tf
+├── terraform.tfvars
+├── outputs.tf
+│
+├── terraform.tfstate
+├── terraform.tfstate.backup
+│
+└── state-analysis
+    ├── tfstate-notes.md
+    └── graph-notes.md
+
+
+---
+
+## Terraform Lifecycle Commands
+
+Terraform follows a standard workflow for infrastructure deployment.
+
+### terraform init
+
+Initializes the Terraform working directory.
+
+Tasks performed:
+
+- Downloads required providers
+- Creates `.terraform` directory
+- Creates `.terraform.lock.hcl`
+
+---
+
+### terraform plan
+
+Previews infrastructure changes before they are applied.
+
+Terraform compares:
+
+Terraform configuration  
+vs  
+Terraform state file
+
+Example output:
+
 Plan: 1 to add, 0 to change, 0 to destroy
 
-**terraform apply**
+---
 
-Purpose:
-Applies the execution plan
-Creates infrastructure in AWS
+### terraform apply
 
-Observation:
-EC2 instance was created
-Terraform generated a terraform.tfstate file
-State file contained resource mapping
+Creates infrastructure defined in Terraform configuration.
 
-**terraform destroy**
+In this project Terraform created:
 
-Purpose:
-Deletes resources defined in Terraform configuration
+- EC2 instance in AWS
 
-Observation:
-EC2 instance terminated
-State updated accordingly
+After execution Terraform generated a state file called:
 
-2. **Terraform Provider**
+terraform.tfstate
 
-Terraform communicates with cloud APIs using providers.
-In this project the provider used was:
-AWS provider.
+---
 
-Configuration defined in:
+### terraform destroy
+
+Removes infrastructure created by Terraform.
+
+This command ensures infrastructure can be safely cleaned up after testing.
+
+---
+
+## Terraform Provider
+
+Terraform uses providers to interact with cloud platforms.
+
+In this project the AWS provider is used.
+
+Provider configuration is defined in:
+
 provider.tf
 
-During terraform init, Terraform downloaded the provider binary and stored it in:
+During initialization Terraform downloads the provider plugin and stores it in:
+
 .terraform/providers/
 
-3.** Terraform Dependency Lock File**
-File created:
+---
+
+## Terraform Lock File
+
+Terraform automatically creates a dependency lock file.
+
+File:
+
 .terraform.lock.hcl
 
 Purpose:
-Locks the exact provider version used
-Ensures all developers use the same provider version
-Prevents unexpected provider upgrades
 
-Observation:
-AWS provider version installed was 5.x.x.
+- Locks provider versions
+- Ensures consistent provider versions across team members
+- Prevents unexpected provider upgrades
 
-This version is determined by the version constraint in provider.tf.
+---
 
-4.** Terraform State File**
+## Terraform State File
 
-Terraform created:
+Terraform maintains infrastructure state in:
+
 terraform.tfstate
 
-Purpose:
-The state file stores the mapping between Terraform configuration and real infrastructure.
+The state file stores the mapping between Terraform resources and actual cloud infrastructure.
 
-Important observation:
-aws_instance.app → EC2 instance ID
+Example mapping:
 
-Example from state:
-"id": "i-092f582ee6a2268db"
+aws_instance.app → EC2 instance
 
-This allows Terraform to track existing resources.
+State file contains:
 
-5. **State File Structure**
+- resource IDs
+- public and private IP addresses
+- subnet information
+- security group details
+- EBS volume information
 
-Key fields observed:
-version
-State file format version.
-terraform_version
-Terraform version used to create the state.
-serial
-State revision number.
+---
 
-Observation:
-Serial number increased every time Terraform applied changes.
+## Terraform State Backup
 
-Example:
+Terraform also creates a backup file:
 
-apply → serial 1
-destroy → serial 2
-apply → serial 3
-lineage
-
-Unique identifier for the infrastructure state.
-Helps Terraform track state history.
-
-resources
-Contains all infrastructure resources managed by Terraform.
-
-Example observed:
-aws_instance.app
-
-Attributes stored include:
-instance ID
-public IP
-private IP
-subnet ID
-security group
-EBS volume information
-
-6.** Terraform State Backup**
-Terraform also created:
 terraform.tfstate.backup
 
 Purpose:
-Backup of the previous state before any modification.
-Used for recovery if the current state becomes corrupted.
 
-7. **Importance of the State File**
+- Backup of the previous state file
+- Allows recovery in case the current state becomes corrupted
 
-Terraform relies on the state file to determine:
+---
 
-what infrastructure already exists
-what needs to be created
-what needs to be destroyed
+## Importance of Terraform State
+
+Terraform relies heavily on the state file.
+
+The state file allows Terraform to determine:
+
+- what infrastructure already exists
+- what needs to be created
+- what needs to be destroyed
 
 If the state file is deleted:
 
-Terraform assumes no infrastructure exists
-It may try to recreate resources
-This can lead to duplicate infrastructure
+Terraform loses track of existing infrastructure and may attempt to recreate resources.
 
-8. **Security Consideration**
+---
 
-State files can contain sensitive information such as:
+## Security Considerations
 
-instance IDs
-IP addresses
-resource ARNs
-credentials (in some cases)
+Terraform state files may contain sensitive information such as:
+
+- infrastructure IDs
+- network information
+- credentials in some cases
 
 Therefore state files should never be committed to Git repositories.
 
-Instead production systems store state remotely using:
+Production environments store state remotely using:
 
-S3 backend
-DynamoDB locking
+- S3 backend
+- DynamoDB locking
 
-This will be implemented later in the roadmap.
+---
 
-9. **Key Learnings from Day 1**
+## Key Learnings
 
-Key concepts understood:
+From this exercise the following concepts were understood:
 
-Terraform lifecycle commands
-Provider installation
-Dependency lock file
-Terraform state file structure
-Infrastructure mapping between Terraform and AWS
-Importance of remote state management
+- Terraform lifecycle commands
+- Provider installation process
+- Terraform dependency lock file
+- Terraform state file structure
+- Mapping between Terraform resources and AWS infrastructure
+- Importance of state management
 
-10. **Experiment Performed**
+---
 
-Lifecycle executed multiple times:
-terraform apply
+## Experiment Conducted
+
+Terraform lifecycle commands were executed multiple times:
+
+terraform apply  
 terraform destroy
 
-**Observation**:
+Observations:
 
-EC2 instance ID changed after each apply
-State serial number increased
-State file updated accordingly
+- EC2 instance ID changes after each apply
+- Terraform state serial number increases
+- Terraform updates infrastructure state accordingly
+
+---
+
+## Next Steps
+
+Next phase of learning includes:
+
+- Terraform variables
+- terraform.tfvars files
+- Terraform outputs
+- Terraform locals
+- count vs for_each concepts
+
